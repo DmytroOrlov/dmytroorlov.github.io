@@ -1,0 +1,14 @@
+title: Dmytro Orlov's Blog
+email: orlov.dm@gmail.com
+description: >
+  I’m scala developer from Cracow, Poland.
+  On this blog, I’m discussing functional programming, as
+  well as anything related to the software development process.
+baseurl: "" # the subpath of your site, e.g. /blog
+url: "" # the base hostname & protocol for your site, e.g. http://example.com
+twitter_username: dmytroorlov
+github_username:  dmytroorlov
+
+theme: minima
+gems:
+  - jekyll-feed
