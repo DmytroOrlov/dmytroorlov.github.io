@@ -5,7 +5,7 @@ date:   2017-03-08 18:24:24 +0100
 categories: fp
 ---
 
-Scala is a multi-paradigm general-purpose programming language providing support for functional programming. Let's dig into it.
+Scala is an object-oriented multi-paradigm programming language providing support for functional programming. Let's dig into it.
 
 ## An example from the standard library
 
@@ -76,12 +76,71 @@ def isPositive: Int => Option[Int] = {
 
 val forallPositive = List(1, 2).traverse(isPositive)
 // forallPositive: Option[List[Int]] = Some(List(1, 2))
-val containsNegative = List(-1, 2).traverse(isPositive)
-// containsNegative: Option[List[Int]] = None
 val someZero: Option[Int] = Some(0)
 val invalid = someZero.traverse(isPositive)
 // invalid: Option[Option[Int]] = None
+val containsNegative = List(-1, 2).traverse(isPositive)
+// containsNegative: Option[List[Int]] = None
 ~~~
+
+## Simplified traverse implementation
+
+For those who asking why `containsNegative` is `None`, not `Some(List(2))`. I can give short but probably demotivating answer. We need to start from the very begining and dive into implementation of `traverse` presented below in a simplified form:
+
+~~~scala
+import cats.Applicative
+
+def traverse[F[_] : Applicative, A, B](as: List[A])(f: A => F[B]): F[List[B]] =
+  as.foldRight(Applicative[F].pure(List.empty[B])) { (a: A, facc: F[List[B]]) =>
+    val fb: F[B] = f(a)
+    // fb and facc are independent effects so we can use Applicative to compose
+    Applicative[F].map2(fb, facc) { (b: B, acc: List[B]) =>
+      b :: acc
+    }
+  }
+traverse(List(-1, 2))(isPositive)
+// res3: Option[List[Int]] = None
+~~~
+
+We need *foldX* to traverse `as: List[A]` and for each `A` apply *effectful* function `f: A => F[B]`. Particular `foldRight` we need to preserve order.
+
+We need `Applicative[F]` for two reasons:
+- first for *foldRight* initial value taken by `Applicative.pure`;
+- and second we can't *combine* our independent effects `fb: F[B]` and `facc: F[List[B]]` directly, thus `Applicative.map2` allows us to *compose* simply `b: B` and `acc: List[B]`.
+
+~~~scala
+type F[T] = Option[T]
+type A = Int
+type B = Int
+val facc0 = Applicative[Option].pure(List.empty[Int])
+// facc0: Option[List[Int]] = Some(List())
+val fb1 = isPositive(2)
+// fb1: Option[Int] = Some(2)
+val facc1 = Applicative[Option].map2(fb1, facc0)(_ :: _)
+// facc1: Option[List[Int]] = Some(List(2))
+val fb2 = isPositive(-1)
+// fb2: Option[Int] = None
+val facc2 = Applicative[Option].map2(fb2, facc1)(_ :: _)
+// facc2: Option[List[Int]] = None
+~~~
+
+And finally here is answer, why the last `Applicative[Option].map2(None, Some(List(2)))(_ :: _)` is not `Some(List(2))` but `None`. Just because for result `Option[Z]` we need to do both `flatMap` and than `map`:
+~~~scala
+cats.instances.option.catsStdInstancesForOption.map2(None, Some(List(2)))(_ :: _)
+// res4: Option[List[Int]] = None
+
+val applicativeInstancesForOption = new Applicative[Option] {
+  override def map2[A, B, Z](fa: Option[A], fb: Option[B])(f: (A, B) => Z): Option[Z] =
+    fa.flatMap(a => fb.map(b => f(a, b)))
+
+  override def pure[A](x: A): Option[A] = ???
+
+  override def ap[A, B](ff: Option[(A) => B])(fa: Option[A]): Option[B] = ???
+}
+applicativeInstancesForOption.map2(None, Some(List(2)))(_ :: _)
+// res5: Option[List[Int]] = None
+~~~
+
 
 [cats-tl]: http://typelevel.org/cats/
 [scalaz-gh]: https://github.com/scalaz/scalaz
