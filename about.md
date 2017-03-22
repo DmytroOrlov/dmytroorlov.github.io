@@ -12,5 +12,7 @@ On this blog, I'm discussing functional programming, as well as anything related
 You can get in touch via [email][mailto].
 
 I can also be found on Twitter {% include icon-twitter.html username="DmytroOrlov" %} and GitHub {% include icon-github.html username="DmytroOrlov" %}
+My [CV][cv].
 
 [mailto]: mailto:orlov.dm@gmail.com
+[cv]: /DmytroOrlovCVforScalaDeveloper.pdf
