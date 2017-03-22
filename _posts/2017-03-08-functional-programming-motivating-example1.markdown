@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Functional Programming in Scala: A Motivating Example #1"
+title:  "Functional Programming in Scala: A Motivating Example 1"
 date:   2017-03-08 18:24:24 +0100
 categories: fp
 ---
